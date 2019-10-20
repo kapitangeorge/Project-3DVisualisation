@@ -12,11 +12,12 @@ namespace Project3D.L.Model
 
         public double B { get; set; }
 
-        public Color (double r, double g, double b)
+        public Color(double r, double g, double b)
         {
             R = r;
             G = g;
             B = b;
         }
+
     }
 }

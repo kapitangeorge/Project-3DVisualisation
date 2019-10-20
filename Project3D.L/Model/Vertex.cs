@@ -7,21 +7,12 @@ namespace Project3D.L.Model
     {
         public Coordinates Coordinates { get; set; }
         public int ColorNumber { get; set; }
-        public int Number
-        {
-            get
-            {
-                return Number;
-            }
-            set
-            {
-                if (value < 1)
-                    Console.WriteLine("File read error");
-                else
-                    Number = value;
-            }
-        }
+        public int Number { get; set; }
 
+        public override string ToString()
+        {
+            return $"v {Coordinates.X} {Coordinates.Y}  {Coordinates.Z}";
+        }
         //методы расстояния
     }
 }
