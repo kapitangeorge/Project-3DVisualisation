@@ -11,9 +11,9 @@ namespace Project3D.CMD
         {
             var path = @"G:\University\Множества достижимости\Color obj\Model3D-6.0pi.obj";
             var objFile = FileProcessing.ReadFile(path);
-            var objList = new List<Obj>();
-            objList.Add(objFile);
-            FileProcessing.WriteFile(@"G:\University\Множества достижимости\Color obj\NewModel.obj", objList);
+            var objList = FigureProcessing.ColorSeperation(objFile);
+
+            FileProcessing.WriteFile(@"G:\University\Множества достижимости\Color obj\", objList);
             Console.WriteLine("Файл прочитан.");
         }
     }

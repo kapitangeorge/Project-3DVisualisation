@@ -12,5 +12,11 @@ namespace Project3D.L.Model
         {
             return $"f {Triangle[0]}//{Triangle[0]} {Triangle[1]}//{Triangle[1]} {Triangle[2]}//{Triangle[2]}";
         }
+
+        public Face(int[] vertex)
+        {
+            Triangle = new long[3] { vertex[0], vertex[1], vertex[2] };
+
+        }
     }
 }
