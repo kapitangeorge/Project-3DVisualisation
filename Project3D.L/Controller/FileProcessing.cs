@@ -208,12 +208,8 @@ namespace Project3D.L.Controller
                 originalObj.Colors.Add(new Color(vertexInfo[3], vertexInfo[4], vertexInfo[5]));
                 colorNumber = colorsCount + 1;
             }
-            originalObj.Vertices.Add(new Vertex()
-            {
-                Coordinates = new Coordinates() { X = vertexInfo[0], Y = vertexInfo[1], Z = vertexInfo[2] },
-                Number = number,
-                ColorNumber = colorNumber
-            });
+            originalObj.Vertices.Add(new Vertex(vertexInfo[0], vertexInfo[1], vertexInfo[2], colorNumber, number));
+           
         }
     }
 }
