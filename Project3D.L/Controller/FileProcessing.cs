@@ -142,17 +142,20 @@ namespace Project3D.L.Controller
             foreach (string str in textStrings)
             {
                 string[] strParts = str.Split(' ').Where(s => !string.IsNullOrEmpty(s)).ToArray();
-                if (strParts.Length == 7 && strParts[0] == "v")
+                if ((strParts.Length == 7) && strParts[0] == "v")
                 {
                     VertexProcessing(strParts, originalObj);
                 }
-
+                if(strParts.Length == 4 && strParts[0] == "v")
+                {
+                    VertexProcessingWithoutColor(strParts, originalObj);
+                }
                 if (strParts.Length == 4 && strParts[0] == "vn")
                 {
                     NormalsProcessing(strParts, originalObj);
                 }
 
-                if (strParts.Length == 4 && strParts[0] == "f")
+                if (strParts[0] == "f")
                 {
                     FacesProcessing(strParts, originalObj);
                 }
@@ -210,6 +213,20 @@ namespace Project3D.L.Controller
             }
             originalObj.Vertices.Add(new Vertex(vertexInfo[0], vertexInfo[1], vertexInfo[2], colorNumber, number));
            
+        }
+
+        private static void VertexProcessingWithoutColor(string[] vertex, Obj originalObj)
+        {
+            var vertexInfo = new double[3];
+            for (var i = 1; i <= 3; i++)
+            {
+                vertexInfo[i - 1] = Convert.ToDouble(vertex[i], new CultureInfo("en-US"));
+            }
+            
+            int number = originalObj.Vertices.Count + 1;
+
+            originalObj.Vertices.Add(new Vertex(vertexInfo[0], vertexInfo[1], vertexInfo[2], 0, number));
+
         }
     }
 }

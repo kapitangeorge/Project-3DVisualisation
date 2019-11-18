@@ -10,7 +10,7 @@ namespace Project3D.CMD
     {
         static void Main(string[] args)
         {
-            var path = @"G:\University\Множества достижимости\Obj models last\Model3D+0.obj";
+            var path = @"G:\University\Множества достижимости\Obj models last\CheatModel.obj";
             var objFile = FileProcessing.ReadFile(path);
             FigureProcessing.InternalFiling(objFile);
 

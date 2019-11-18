@@ -11,31 +11,33 @@ namespace Project3D.L.Controller
         public static Obj InternalFiling(Obj originalObj)
         {
             var index = 1;
-            //var layers = new List<Vertex>();
-
             var layers = originalObj.Vertices.OrderBy(x => x.Coordinates.Z).ToList();
             while (index < layers.Count)
             {
                 var oneLayer = GetOneLayer(layers, ref index);
-                var minAndMaxVertex = FindMinAndMax(oneLayer);
-                var center = GetCenter(minAndMaxVertex);
-                ClockwiseComparer(oneLayer, center);
-                GetProblemsPoint(oneLayer);
+                if (oneLayer.Count >= 3)
+                {
+                    var minAndMaxVertex = FindMinAndMax(oneLayer);
+                    var center = GetCenter(minAndMaxVertex);
+                    ClockwiseComparer(oneLayer, center);
+                    var ProblemPoints = GetProblemsPoint(oneLayer);
+                }
             }
 
             return originalObj;
         }
 
-       
+
 
         private static List<Vertex> GetOneLayer(List<Vertex> layers, ref int index)
         {
             var oneLayer = new List<Vertex>() { layers[index - 1] };
-            while (layers[index].Coordinates.Z == layers[index - 1].Coordinates.Z)
+            while (index < layers.Count && layers[index].Coordinates.Z == layers[index - 1].Coordinates.Z)
             {
                 oneLayer.Add(layers[index]);
                 index++;
             }
+            if (oneLayer.Count == 1) index++;
             return oneLayer;
         }
 
@@ -55,10 +57,10 @@ namespace Project3D.L.Controller
 
         private static Vertex GetCenter(MinAndMaxVertex minAndMaxVertex)
         {
-            var minXLine = new StraightLine(minAndMaxVertex.MinX, new Vertex(minAndMaxVertex.MinX.Coordinates.X, 0, minAndMaxVertex.MinX.Coordinates.Z));
-            var maxXLine = new StraightLine(minAndMaxVertex.MaxX, new Vertex(minAndMaxVertex.MaxX.Coordinates.X, 0, minAndMaxVertex.MaxX.Coordinates.Z));
-            var minYLine = new StraightLine(minAndMaxVertex.MinY, new Vertex(0, minAndMaxVertex.MinY.Coordinates.Y, minAndMaxVertex.MinX.Coordinates.Z));
-            var maxYLine = new StraightLine(minAndMaxVertex.MaxY, new Vertex(0, minAndMaxVertex.MaxY.Coordinates.Y, minAndMaxVertex.MaxX.Coordinates.Z));
+            var minXLine = new StraightLine(minAndMaxVertex.MinX, new Vertex(minAndMaxVertex.MinX.Coordinates.X, minAndMaxVertex.MinX.Coordinates.Y - 10, minAndMaxVertex.MinX.Coordinates.Z));
+            var maxXLine = new StraightLine(minAndMaxVertex.MaxX, new Vertex(minAndMaxVertex.MaxX.Coordinates.X, minAndMaxVertex.MaxX.Coordinates.Y - 10, minAndMaxVertex.MaxX.Coordinates.Z));
+            var minYLine = new StraightLine(minAndMaxVertex.MinY, new Vertex(minAndMaxVertex.MinY.Coordinates.X - 10, minAndMaxVertex.MinY.Coordinates.Y, minAndMaxVertex.MinX.Coordinates.Z));
+            var maxYLine = new StraightLine(minAndMaxVertex.MaxY, new Vertex(minAndMaxVertex.MaxX.Coordinates.X - 10, minAndMaxVertex.MaxY.Coordinates.Y, minAndMaxVertex.MaxX.Coordinates.Z));
 
             var minXAndminYVertex = Vertex.IntersectionPointOfTwoLines2D(minXLine, minYLine);
             var minXAndMaxYVertex = Vertex.IntersectionPointOfTwoLines2D(minXLine, maxYLine);
@@ -72,11 +74,13 @@ namespace Project3D.L.Controller
         private static List<Vertex> GetProblemsPoint(List<Vertex> oneLayer)
         {
             var problemPoints = new List<Vertex>();
-            for (var i = 1; i < oneLayer.Count; i++)
+            for (var i = 1; i < oneLayer.Count - 1; i++)
             {
                 var angleBetweenLines = GetAngle(oneLayer[i - 1], oneLayer[i], oneLayer[i + 1]);
                 if (angleBetweenLines < 90) problemPoints.Add(oneLayer[i]);
             }
+            if (GetAngle(oneLayer[oneLayer.Count - 1], oneLayer[0], oneLayer[1]) < 90) problemPoints.Add(oneLayer[0]);
+            if (GetAngle(oneLayer[oneLayer.Count - 2], oneLayer[oneLayer.Count - 1], oneLayer[0]) < 90) problemPoints.Add(oneLayer[oneLayer.Count - 1]);
             return problemPoints;
         }
 
@@ -96,6 +100,7 @@ namespace Project3D.L.Controller
         public static List<Obj> ColorSeperation(Obj originalObj)
         {
             var ObjSortedByColor = new List<Obj>();
+            ObjSortedByColor.Add(new Obj());
             foreach (var color in originalObj.Colors)
             {
                 ObjSortedByColor.Add(new Obj());
@@ -108,7 +113,7 @@ namespace Project3D.L.Controller
 
                 foreach (var id in face.Triangle)
                 {
-                    var i = (Int32)id;
+                    var i = (int)id;
                     triangleTops.Add(originalObj.Vertices[i - 1]);
                     normals.Add(originalObj.Normals[i - 1]);
                 }
@@ -148,7 +153,7 @@ namespace Project3D.L.Controller
                 index = triangleTops[1].ColorNumber - 1;
             }
 
-            return index;
+            return index < 0 ? 0 : index;
         }
 
         private static void ClockwiseComparer(List<Vertex> oneLayer, Vertex center)
