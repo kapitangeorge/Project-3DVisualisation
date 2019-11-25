@@ -10,14 +10,14 @@ namespace Project3D.CMD
     {
         static void Main(string[] args)
         {
-            var path = @"G:\University\Множества достижимости\Obj models last\CheatModel.obj";
+            var path = @"C:\obj\Model3D+0.0-08pi_4.obj";
             var objFile = FileProcessing.ReadFile(path);
             FigureProcessing.InternalFiling(objFile);
 
             var objList = FigureProcessing.ColorSeperation(objFile);
 
 
-            FileProcessing.WriteFile(@"G:\University\Множества достижимости\Color obj\", objList);
+            FileProcessing.WriteFile(@"C:\obj\Color obj\", objList);
             Console.WriteLine("Файл прочитан.");
         }
     }

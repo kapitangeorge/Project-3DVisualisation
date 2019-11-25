@@ -18,16 +18,162 @@ namespace Project3D.L.Controller
                 if (oneLayer.Count >= 3)
                 {
                     var minAndMaxVertex = FindMinAndMax(oneLayer);
-                    var center = GetCenter(minAndMaxVertex);
-                    ClockwiseComparer(oneLayer, center);
-                    var ProblemPoints = GetProblemsPoint(oneLayer);
+                    var centerPoint = GetCenter(minAndMaxVertex);
+                    ClockwiseComparer(oneLayer, centerPoint);
+                    var problemPoints = GetProblemsPoint(oneLayer);
+                    var normals = originalObj.Normals;
+                    var colorsCount = originalObj.Colors.Count;
+
+                    //если невыпуклая фигура
+                    if (problemPoints.Count == 2)
+                    {
+                        for (var i = 0; i < oneLayer.Count; i++)
+                        {
+                            if (oneLayer[i] == problemPoints[0] || oneLayer[i] == problemPoints[1])
+                            {
+
+                                if (i == 0)
+                                {
+                                    var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[i + 1], ReflectNormal(normals[i]), ReflectNormal(normals[i + 1]));
+                                    var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[oneLayer.Count - 1], ReflectNormal(normals[i]), ReflectNormal(normals[oneLayer.Count - 1]));
+                                    var len1 = LengthOfSegment(oneLayer[i], oneLayer[i + 1], normals[i], normals[i + 1]);
+                                    var len2 = LengthOfSegment(oneLayer[i], oneLayer[oneLayer.Count - 1], normals[i], normals[oneLayer.Count - 1]);
+                                    var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
+                                    originalObj.Vertices.Add(new Vertex(nearestPoint.X,
+                                                  nearestPoint.Y,
+                                                  oneLayer[i].Coordinates.Z,
+                                                  colorsCount + 1,
+                                                  originalObj.Vertices.Count + 1));
+                                    i++;
+                                }
+                                else if ((i >= 1) && (i != oneLayer.Count - 1))
+                                {
+                                    var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[i + 1], ReflectNormal(normals[i]), ReflectNormal(normals[i + 1]));
+                                    var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[i - 1], ReflectNormal(normals[i]), ReflectNormal(normals[i - 1]));
+                                    var len1 = LengthOfSegment(oneLayer[i], oneLayer[i + 1], normals[i], normals[i + 1]);
+                                    var len2 = LengthOfSegment(oneLayer[i], oneLayer[i - 1], normals[i], normals[i - 1]);
+                                    var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
+                                    originalObj.Vertices.Add(new Vertex(nearestPoint.X,
+                                                  nearestPoint.Y,
+                                                  oneLayer[i].Coordinates.Z,
+                                                  colorsCount + 1,
+                                                  originalObj.Vertices.Count + 1));
+                                    i++;
+                                }
+                                else if (i == oneLayer.Count - 1)
+                                {
+                                    var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[0], ReflectNormal(normals[i]), ReflectNormal(normals[0]));
+                                    var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[oneLayer.Count - 2], ReflectNormal(normals[i]), ReflectNormal(normals[oneLayer.Count - 2]));
+                                    var len1 = LengthOfSegment(oneLayer[i], oneLayer[0], normals[i], normals[0]);
+                                    var len2 = LengthOfSegment(oneLayer[i], oneLayer[oneLayer.Count - 2], normals[i], normals[oneLayer.Count - 2]);
+                                    var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
+                                    originalObj.Vertices.Add(new Vertex(nearestPoint.X,
+                                                  nearestPoint.Y,
+                                                  oneLayer[i].Coordinates.Z,
+                                                  colorsCount + 1,
+                                                  originalObj.Vertices.Count + 1));
+                                    i++;
+                                }
+
+
+
+                                for (var j = i + 1; j < oneLayer.Count - 2; j++)
+                                {
+                                    var normal1 = new Normal(x: oneLayer[j + 1].Coordinates.X - oneLayer[j].Coordinates.X,
+                                                             y: oneLayer[j + 1].Coordinates.Y - oneLayer[j].Coordinates.Y,
+                                                             z: oneLayer[j].Coordinates.Z,
+                                                             number: normals.Count + 1);
+                                    var pointOfIntersection = IntersectionOfLines(oneLayer[i], oneLayer[j], normals[i], normal1);
+
+                                    if (PointBelongToSegm(pointOfIntersection, oneLayer[j], oneLayer[j + 1]))
+                                        originalObj.Vertices.Add(new Vertex((pointOfIntersection.X + oneLayer[i].Coordinates.X) / 5,
+                                                  (pointOfIntersection.Y + oneLayer[i].Coordinates.Y) / 5,
+                                                  oneLayer[i].Coordinates.Z,
+                                                  colorsCount + 1,
+                                                  originalObj.Vertices.Count + 1));
+                                }
+                            }
+                        }
+                    }
+
+                    //для выпуклой фигуры
+                    else
+                    {
+                        for (var number = 0; number < oneLayer.Count; number++)
+                        {
+
+                            originalObj.Vertices.Add(new Vertex((oneLayer[number].Coordinates.X + centerPoint.Coordinates.X) / 3,
+                                                  (oneLayer[number].Coordinates.Y + centerPoint.Coordinates.Y) / 3,
+                                                  oneLayer[number].Coordinates.Z,
+                                                  colorsCount + 1,
+                                                  originalObj.Vertices.Count + 1));
+                        }
+                    }
                 }
             }
 
             return originalObj;
         }
 
+        private static double LengthOfSegment(Vertex v1, Vertex v2, Normal n1, Normal n2)
+        {
+            var cross = IntersectionOfLines(v1, v2, ReflectNormal(n1), ReflectNormal(n2));
+            return Math.Sqrt((v1.Coordinates.X - cross.X) * (v1.Coordinates.X - cross.X) + ((v1.Coordinates.Y - cross.Y) * (v1.Coordinates.Y - cross.Y)));
 
+        }
+
+        private static Coordinates NearestIntersection(double len1, double len2, Coordinates cross1, Coordinates cross2, Vertex vertexOfLayer)
+        {
+            var cross = new Coordinates();
+            if (len1 < len2)
+            {
+                cross.X = cross1.X;
+                cross.Y = cross1.Y;
+                cross.Z = vertexOfLayer.Coordinates.Z;
+            }
+            else
+            {
+                cross.X = cross2.X;
+                cross.Y = cross2.Y;
+                cross.Z = vertexOfLayer.Coordinates.Z;
+            }
+            return cross;
+        }
+
+        private static Coordinates IntersectionOfLines(Vertex vertex1, Vertex vertex2, Normal normal1, Normal normal2)
+        {
+            var result = new Coordinates();
+            var a1 = normal1.Coordinates.Y;
+            var a2 = normal2.Coordinates.Y;
+            var b1 = -normal1.Coordinates.X;
+            var b2 = -normal2.Coordinates.X;
+            var c1 = (normal1.Coordinates.X * vertex1.Coordinates.Y) - (normal1.Coordinates.Y * vertex1.Coordinates.X);
+            var c2 = (normal2.Coordinates.X * vertex2.Coordinates.Y) - (normal2.Coordinates.Y * vertex2.Coordinates.X);
+
+            var den = a1 * b2 - a2 * b1;
+
+            if (den != 0)
+            {
+                result.X = ((b1 * c2) - (b2 * c1)) / den;
+                result.Y = ((a2 * c1) - (a1 * c2)) / den;
+            }
+
+            return result;
+        }
+
+        private static Normal ReflectNormal(Normal normal)
+        {
+            normal.Coordinates.X *= -1;
+            normal.Coordinates.Y *= -1;
+
+            return normal;
+        }
+
+        private static bool PointBelongToSegm(Coordinates pointOfIntersection, Vertex vertexOfSegm1, Vertex vertexOfSegm2)
+        {
+            return (((pointOfIntersection.X - vertexOfSegm1.Coordinates.X) / (vertexOfSegm2.Coordinates.X - vertexOfSegm1.Coordinates.X)) ==
+                                        ((pointOfIntersection.Y - vertexOfSegm1.Coordinates.Y) / vertexOfSegm2.Coordinates.Y - vertexOfSegm1.Coordinates.Y)) ? true : false;
+        }
 
         private static List<Vertex> GetOneLayer(List<Vertex> layers, ref int index)
         {
