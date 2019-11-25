@@ -23,6 +23,7 @@ namespace Project3D.L.Controller
                     var problemPoints = GetProblemsPoint(oneLayer);
                     var normals = originalObj.Normals;
                     var colorsCount = originalObj.Colors.Count;
+                    var vertexBorder = new Vertex[originalObj.Colors.Count + 1];
 
                     //если невыпуклая фигура
                     if (problemPoints.Count == 2)
@@ -39,11 +40,7 @@ namespace Project3D.L.Controller
                                     var len1 = LengthOfSegment(oneLayer[i], oneLayer[i + 1], normals[i], normals[i + 1]);
                                     var len2 = LengthOfSegment(oneLayer[i], oneLayer[oneLayer.Count - 1], normals[i], normals[oneLayer.Count - 1]);
                                     var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
-                                    originalObj.Vertices.Add(new Vertex(nearestPoint.X,
-                                                  nearestPoint.Y,
-                                                  oneLayer[i].Coordinates.Z,
-                                                  colorsCount + 1,
-                                                  originalObj.Vertices.Count + 1));
+                                    CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount, originalObj.Vertices.Count, 1);
                                     i++;
                                 }
                                 else if ((i >= 1) && (i != oneLayer.Count - 1))
@@ -53,11 +50,7 @@ namespace Project3D.L.Controller
                                     var len1 = LengthOfSegment(oneLayer[i], oneLayer[i + 1], normals[i], normals[i + 1]);
                                     var len2 = LengthOfSegment(oneLayer[i], oneLayer[i - 1], normals[i], normals[i - 1]);
                                     var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
-                                    originalObj.Vertices.Add(new Vertex(nearestPoint.X,
-                                                  nearestPoint.Y,
-                                                  oneLayer[i].Coordinates.Z,
-                                                  colorsCount + 1,
-                                                  originalObj.Vertices.Count + 1));
+                                    CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount, originalObj.Vertices.Count, 1);
                                     i++;
                                 }
                                 else if (i == oneLayer.Count - 1)
@@ -67,15 +60,9 @@ namespace Project3D.L.Controller
                                     var len1 = LengthOfSegment(oneLayer[i], oneLayer[0], normals[i], normals[0]);
                                     var len2 = LengthOfSegment(oneLayer[i], oneLayer[oneLayer.Count - 2], normals[i], normals[oneLayer.Count - 2]);
                                     var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
-                                    originalObj.Vertices.Add(new Vertex(nearestPoint.X,
-                                                  nearestPoint.Y,
-                                                  oneLayer[i].Coordinates.Z,
-                                                  colorsCount + 1,
-                                                  originalObj.Vertices.Count + 1));
+                                    CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount, originalObj.Vertices.Count, 1);
                                     i++;
                                 }
-
-
 
                                 for (var j = i + 1; j < oneLayer.Count - 2; j++)
                                 {
@@ -86,11 +73,16 @@ namespace Project3D.L.Controller
                                     var pointOfIntersection = IntersectionOfLines(oneLayer[i], oneLayer[j], normals[i], normal1);
 
                                     if (PointBelongToSegm(pointOfIntersection, oneLayer[j], oneLayer[j + 1]))
-                                        originalObj.Vertices.Add(new Vertex((pointOfIntersection.X + oneLayer[i].Coordinates.X) / 5,
-                                                  (pointOfIntersection.Y + oneLayer[i].Coordinates.Y) / 5,
-                                                  oneLayer[i].Coordinates.Z,
-                                                  colorsCount + 1,
-                                                  originalObj.Vertices.Count + 1));
+                                        CreateInnerVertices(originalObj, pointOfIntersection, oneLayer[i], colorsCount, originalObj.Vertices.Count, 5);
+
+                                    //запоминаем границу цвета
+                                    for (var e = 0; e < vertexBorder.Length; e++)
+                                    {
+                                        if (oneLayer[j].ColorNumber != oneLayer[j + 1].ColorNumber)
+                                        {
+                                            vertexBorder[e] = oneLayer[j];
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -101,12 +93,7 @@ namespace Project3D.L.Controller
                     {
                         for (var number = 0; number < oneLayer.Count; number++)
                         {
-
-                            originalObj.Vertices.Add(new Vertex((oneLayer[number].Coordinates.X + centerPoint.Coordinates.X) / 3,
-                                                  (oneLayer[number].Coordinates.Y + centerPoint.Coordinates.Y) / 3,
-                                                  oneLayer[number].Coordinates.Z,
-                                                  colorsCount + 1,
-                                                  originalObj.Vertices.Count + 1));
+                            CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], colorsCount, originalObj.Vertices.Count, 3);
                         }
                     }
                 }
@@ -174,6 +161,38 @@ namespace Project3D.L.Controller
             return (((pointOfIntersection.X - vertexOfSegm1.Coordinates.X) / (vertexOfSegm2.Coordinates.X - vertexOfSegm1.Coordinates.X)) ==
                                         ((pointOfIntersection.Y - vertexOfSegm1.Coordinates.Y) / vertexOfSegm2.Coordinates.Y - vertexOfSegm1.Coordinates.Y)) ? true : false;
         }
+
+        private static void CreateInnerVertices(Obj originalObj, Coordinates vertex1, Vertex vertex2, int colorsCount, int verticesCount, int den)
+        {
+            if (den == 1)
+            {
+                originalObj.Vertices.Add(new Vertex(vertex1.X,
+                                                  vertex1.Y,
+                                                  vertex2.Coordinates.Z,
+                                                  colorsCount + 1,
+                                                  verticesCount + 1));
+                originalObj.Vertices.Add(new Vertex(vertex1.X,
+                                     vertex1.Y,
+                                     vertex2.Coordinates.Z,
+                                     colorsCount + 1,
+                                     verticesCount + 1));
+            }
+            else
+            {
+
+                originalObj.Vertices.Add(new Vertex(vertex1.X + vertex2.Coordinates.X / den,
+                                                      vertex1.Y + vertex2.Coordinates.Y / den,
+                                                      vertex2.Coordinates.Z,
+                                                      colorsCount + 1,
+                                                      verticesCount + 1));
+                originalObj.Vertices.Add(new Vertex(vertex1.X + vertex2.Coordinates.X / den,
+                                                      vertex1.Y + vertex2.Coordinates.Y / den,
+                                                      vertex2.Coordinates.Z,
+                                                      colorsCount + 1,
+                                                      verticesCount + 1));
+            }
+        }
+
 
         private static List<Vertex> GetOneLayer(List<Vertex> layers, ref int index)
         {
