@@ -23,7 +23,8 @@ namespace Project3D.L.Controller
                     var problemPoints = GetProblemsPoint(oneLayer);
                     var normals = originalObj.Normals;
                     var colorsCount = originalObj.Colors.Count;
-                    var vertexBorder = new Vertex[originalObj.Colors.Count + 1];
+                    var vertexBorder = new Vertex[colorsCount];
+                    var innerVertexBorder = new Vertex[colorsCount];
 
                     //если невыпуклая фигура
                     if (problemPoints.Count == 2)
@@ -78,10 +79,8 @@ namespace Project3D.L.Controller
                                     //запоминаем границу цвета
                                     for (var e = 0; e < vertexBorder.Length; e++)
                                     {
-                                        if (oneLayer[j].ColorNumber != oneLayer[j + 1].ColorNumber)
-                                        {
+                                            if (oneLayer[j].ColorNumber != oneLayer[j + 1].ColorNumber)
                                             vertexBorder[e] = oneLayer[j];
-                                        }
                                     }
                                 }
                             }
@@ -91,9 +90,21 @@ namespace Project3D.L.Controller
                     //для выпуклой фигуры
                     else
                     {
-                        for (var number = 0; number < oneLayer.Count; number++)
+                        for (var number = 0; number < oneLayer.Count - 1; number++)
                         {
                             CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], colorsCount, originalObj.Vertices.Count, 3);
+                            //запоминаем границу цвета
+                            for (var e = 0; e < vertexBorder.Length; e++)
+                            {
+                                if (oneLayer[number].ColorNumber != oneLayer[number + 1].ColorNumber)
+                                    vertexBorder[e] = oneLayer[number];
+
+                                /*if (vertexBorder[e] != null)
+                                {
+                                    originalObj.Vertices[originalObj.Vertices.Count].ColorNumber = oneLayer[number].ColorNumber;
+                                }*/
+                            }
+
                         }
                     }
                 }
