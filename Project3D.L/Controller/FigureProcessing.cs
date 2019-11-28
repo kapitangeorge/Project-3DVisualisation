@@ -23,67 +23,239 @@ namespace Project3D.L.Controller
                     var problemPoints = GetProblemsPoint(oneLayer);
                     var normals = originalObj.Normals;
                     var colorsCount = originalObj.Colors.Count;
-                    var vertexBorder = new Vertex[colorsCount];
+                    var vertexBorder = new Vertex[2 * colorsCount];
                     var innerVertexBorder = new Vertex[colorsCount];
+                    var internalSegments = new List<StraightLine>();
+                    var internalPoints = new List<Vertex>();
+                    int temp1 = 0;
+                    int temp2 = 0;
+
+                    //запоминаем границы цвета
+                    for (var i = 0; i < oneLayer.Count - 1; i++)
+                    {
+                        if (oneLayer[i].ColorNumber != oneLayer[i + 1].ColorNumber)
+                            for (var e = 0; e < vertexBorder.Length - 1; e++)
+                            {
+                                vertexBorder[e] = oneLayer[i];
+                                vertexBorder[e + 1] = oneLayer[i + 1];
+                            }
+                    }
+
 
                     //если невыпуклая фигура
                     if (problemPoints.Count == 2)
                     {
                         for (var i = 0; i < oneLayer.Count; i++)
                         {
+
+
+
                             if (oneLayer[i] == problemPoints[0] || oneLayer[i] == problemPoints[1])
                             {
-
-                                if (i == 0)
+                                for (var e = 0; e < vertexBorder.Length - 1; e++)
                                 {
-                                    var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[i + 1], ReflectNormal(normals[i]), ReflectNormal(normals[i + 1]));
-                                    var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[oneLayer.Count - 1], ReflectNormal(normals[i]), ReflectNormal(normals[oneLayer.Count - 1]));
-                                    var len1 = LengthOfSegment(oneLayer[i], oneLayer[i + 1], normals[i], normals[i + 1]);
-                                    var len2 = LengthOfSegment(oneLayer[i], oneLayer[oneLayer.Count - 1], normals[i], normals[oneLayer.Count - 1]);
-                                    var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
-                                    CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount, originalObj.Vertices.Count, 1);
-                                    i++;
-                                }
-                                else if ((i >= 1) && (i != oneLayer.Count - 1))
-                                {
-                                    var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[i + 1], ReflectNormal(normals[i]), ReflectNormal(normals[i + 1]));
-                                    var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[i - 1], ReflectNormal(normals[i]), ReflectNormal(normals[i - 1]));
-                                    var len1 = LengthOfSegment(oneLayer[i], oneLayer[i + 1], normals[i], normals[i + 1]);
-                                    var len2 = LengthOfSegment(oneLayer[i], oneLayer[i - 1], normals[i], normals[i - 1]);
-                                    var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
-                                    CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount, originalObj.Vertices.Count, 1);
-                                    i++;
-                                }
-                                else if (i == oneLayer.Count - 1)
-                                {
-                                    var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[0], ReflectNormal(normals[i]), ReflectNormal(normals[0]));
-                                    var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[oneLayer.Count - 2], ReflectNormal(normals[i]), ReflectNormal(normals[oneLayer.Count - 2]));
-                                    var len1 = LengthOfSegment(oneLayer[i], oneLayer[0], normals[i], normals[0]);
-                                    var len2 = LengthOfSegment(oneLayer[i], oneLayer[oneLayer.Count - 2], normals[i], normals[oneLayer.Count - 2]);
-                                    var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
-                                    CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount, originalObj.Vertices.Count, 1);
-                                    i++;
-                                }
 
-                                for (var j = i + 1; j < oneLayer.Count - 2; j++)
-                                {
-                                    var normal1 = new Normal(x: oneLayer[j + 1].Coordinates.X - oneLayer[j].Coordinates.X,
-                                                             y: oneLayer[j + 1].Coordinates.Y - oneLayer[j].Coordinates.Y,
-                                                             z: oneLayer[j].Coordinates.Z,
-                                                             number: normals.Count + 1);
-                                    var pointOfIntersection = IntersectionOfLines(oneLayer[i], oneLayer[j], normals[i], normal1);
-
-                                    if (PointBelongToSegm(pointOfIntersection, oneLayer[j], oneLayer[j + 1]))
-                                        CreateInnerVertices(originalObj, pointOfIntersection, oneLayer[i], colorsCount, originalObj.Vertices.Count, 5);
-
-                                    //запоминаем границу цвета
-                                    for (var e = 0; e < vertexBorder.Length; e++)
+                                    if (i == 0)
                                     {
-                                            if (oneLayer[j].ColorNumber != oneLayer[j + 1].ColorNumber)
-                                            vertexBorder[e] = oneLayer[j];
+                                        var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[i + 1], ReflectNormal(normals[i]), ReflectNormal(normals[i + 1]));
+                                        var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[oneLayer.Count - 1], ReflectNormal(normals[i]), ReflectNormal(normals[oneLayer.Count - 1]));
+                                        var len1 = LengthOfSegment(oneLayer[i], oneLayer[i + 1], normals[i], normals[i + 1]);
+                                        var len2 = LengthOfSegment(oneLayer[i], oneLayer[oneLayer.Count - 1], normals[i], normals[oneLayer.Count - 1]);
+                                        var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
+
+                                        if (oneLayer[i] == vertexBorder[e])
+                                        {
+                                            internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], vertexBorder[e].ColorNumber, originalObj.Vertices.Count, 1));
+                                            internalSegments.Add(new StraightLine()
+                                            {
+                                                Point1 = oneLayer[i],
+                                                Point2 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                                Number1 = oneLayer[i].Number,
+                                                Number2 = originalObj.Vertices.Count - 1
+                                            });
+                                            internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 1));
+                                            temp1 = originalObj.Vertices.Count - 2;
+                                            temp2 = originalObj.Vertices.Count - 1;
+                                            i++;
+                                        }
+
+                                        i++;
+                                    }
+                                    else if ((i >= 1) && (i < oneLayer.Count - 1))
+                                    {
+                                        var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[i + 1], ReflectNormal(normals[i]), ReflectNormal(normals[i + 1]));
+                                        var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[i - 1], ReflectNormal(normals[i]), ReflectNormal(normals[i - 1]));
+                                        var len1 = LengthOfSegment(oneLayer[i], oneLayer[i + 1], normals[i], normals[i + 1]);
+                                        var len2 = LengthOfSegment(oneLayer[i], oneLayer[i - 1], normals[i], normals[i - 1]);
+                                        var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
+
+                                        if (oneLayer[i] == vertexBorder[e])
+                                        {
+                                            internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], vertexBorder[e].ColorNumber, originalObj.Vertices.Count, 1));
+                                            internalSegments.Add(new StraightLine()
+                                            {
+                                                Point1 = oneLayer[i],
+                                                Point2 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                                Number1 = oneLayer[i].Number,
+                                                Number2 = originalObj.Vertices.Count - 1
+                                            });
+                                            internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 1));
+                                            i++;
+                                        }
+
+                                        internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], oneLayer[i].ColorNumber, originalObj.Vertices.Count, 1));
+                                        internalSegments.Add(new StraightLine()
+                                        {
+                                            Point1 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                            Point2 = originalObj.Vertices[originalObj.Vertices.Count - 3],
+                                            Number1 = originalObj.Vertices.Count - 1,
+                                            Number2 = originalObj.Vertices.Count - 3
+                                        });
+                                        internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 1));
+                                        internalSegments.Add(new StraightLine()
+                                        {
+                                            Point1 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                            Point2 = originalObj.Vertices[originalObj.Vertices.Count - 3],
+                                            Number1 = originalObj.Vertices.Count - 1,
+                                            Number2 = originalObj.Vertices.Count - 3
+                                        });
+
+
+                                        /*CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 1);
+                                        CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 1);*/
+                                        i++;
+                                    }
+                                    else if (i == oneLayer.Count - 1)
+                                    {
+                                        var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[0], ReflectNormal(normals[i]), ReflectNormal(normals[0]));
+                                        var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[oneLayer.Count - 2], ReflectNormal(normals[i]), ReflectNormal(normals[oneLayer.Count - 2]));
+                                        var len1 = LengthOfSegment(oneLayer[i], oneLayer[0], normals[i], normals[0]);
+                                        var len2 = LengthOfSegment(oneLayer[i], oneLayer[oneLayer.Count - 2], normals[i], normals[oneLayer.Count - 2]);
+                                        var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
+
+                                        if (oneLayer[i] == vertexBorder[e])
+                                        {
+                                            internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], vertexBorder[e].ColorNumber, originalObj.Vertices.Count, 1));
+                                            internalSegments.Add(new StraightLine()
+                                            {
+                                                Point1 = oneLayer[i],
+                                                Point2 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                                Number1 = oneLayer[i].Number,
+                                                Number2 = originalObj.Vertices.Count - 1
+                                            });
+                                            internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 1));
+                                            i++;
+                                        }
+
+                                        {
+                                            internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], oneLayer[i].ColorNumber, originalObj.Vertices.Count, 1));
+                                            internalSegments.Add(new StraightLine()
+                                            {
+                                                Point1 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                                Point2 = originalObj.Vertices[temp1],
+                                                Number1 = originalObj.Vertices.Count - 1,
+                                                Number2 = temp1
+                                            });
+                                            internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 1));
+                                            internalSegments.Add(new StraightLine()
+                                            {
+                                                Point1 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                                Point2 = originalObj.Vertices[temp2],
+                                                Number1 = originalObj.Vertices.Count - 1,
+                                                Number2 = temp2
+                                            });
+                                        }
+
+                                        /*CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 1);
+                                        CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 1);*/
+                                        i++;
                                     }
                                 }
                             }
+
+                            for (var j = i + 1; j < oneLayer.Count - 2; j++)
+                            {
+
+                                var normal1 = new Normal(x: oneLayer[j + 1].Coordinates.X - oneLayer[j].Coordinates.X,
+                                                         y: oneLayer[j + 1].Coordinates.Y - oneLayer[j].Coordinates.Y,
+                                                         z: oneLayer[j].Coordinates.Z,
+                                                         number: normals.Count + 1);
+                                var pointOfIntersection = IntersectionOfLines(oneLayer[i], oneLayer[j], normals[i], normal1);
+                                for (var e = 0; e < vertexBorder.Length - 1; e++)
+                                {
+
+                                    if (PointBelongToSegm(pointOfIntersection, oneLayer[j], oneLayer[j + 1]))
+                                    {
+                                        if (oneLayer[i] == vertexBorder[e])
+                                        {
+                                            internalPoints.Add(CreateInnerVertices(originalObj, pointOfIntersection, oneLayer[i], vertexBorder[e].ColorNumber, originalObj.Vertices.Count, 5));
+                                            internalSegments.Add(new StraightLine()
+                                            {
+                                                Point1 = oneLayer[i],
+                                                Point2 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                                Number1 = oneLayer[i].Number,
+                                                Number2 = originalObj.Vertices.Count - 1
+                                            });
+                                            internalPoints.Add(CreateInnerVertices(originalObj, pointOfIntersection, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 5));
+                                            if (i == 0)
+                                            {
+                                                temp1 = originalObj.Vertices.Count - 2;
+                                                temp2 = originalObj.Vertices.Count - 1;
+                                            }
+                                            i++;
+                                        }
+
+                                        if (i == 0)
+                                        {
+                                            temp1 = originalObj.Vertices.Count - 2;
+                                            temp2 = originalObj.Vertices.Count - 1;
+                                        }
+                                        else if (i != oneLayer.Count)
+                                        {
+                                            internalPoints.Add(CreateInnerVertices(originalObj, pointOfIntersection, oneLayer[i], oneLayer[i].ColorNumber, originalObj.Vertices.Count, 5));
+                                            internalSegments.Add(new StraightLine()
+                                            {
+                                                Point1 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                                Point2 = originalObj.Vertices[originalObj.Vertices.Count - 3],
+                                                Number1 = originalObj.Vertices.Count - 1,
+                                                Number2 = originalObj.Vertices.Count - 3
+                                            });
+                                            internalPoints.Add(CreateInnerVertices(originalObj, pointOfIntersection, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 5));
+                                            internalSegments.Add(new StraightLine()
+                                            {
+                                                Point1 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                                Point2 = originalObj.Vertices[originalObj.Vertices.Count - 3],
+                                                Number1 = originalObj.Vertices.Count - 1,
+                                                Number2 = originalObj.Vertices.Count - 3
+                                            });
+                                        }
+                                        if (i == oneLayer.Count)
+                                        {
+                                            internalPoints.Add(CreateInnerVertices(originalObj, pointOfIntersection, oneLayer[i], oneLayer[i].ColorNumber, originalObj.Vertices.Count, 5));
+                                            internalSegments.Add(new StraightLine()
+                                            {
+                                                Point1 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                                Point2 = originalObj.Vertices[temp1],
+                                                Number1 = originalObj.Vertices.Count - 1,
+                                                Number2 = temp1
+                                            });
+                                            internalPoints.Add(CreateInnerVertices(originalObj, pointOfIntersection, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 5));
+                                            internalSegments.Add(new StraightLine()
+                                            {
+                                                Point1 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                                Point2 = originalObj.Vertices[temp2],
+                                                Number1 = originalObj.Vertices.Count - 1,
+                                                Number2 = temp2
+                                            });
+                                        }
+
+                                        /*CreateInnerVertices(originalObj, pointOfIntersection, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 5);
+                                        CreateInnerVertices(originalObj, pointOfIntersection, oneLayer[i], colorsCount + 1, originalObj.Vertices.Count, 5);*/
+                                    }
+                                }
+                            }
+
+
                         }
                     }
 
@@ -92,19 +264,76 @@ namespace Project3D.L.Controller
                     {
                         for (var number = 0; number < oneLayer.Count - 1; number++)
                         {
-                            CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], colorsCount, originalObj.Vertices.Count, 3);
-                            //запоминаем границу цвета
-                            for (var e = 0; e < vertexBorder.Length; e++)
+                            for (var e = 0; e < vertexBorder.Length - 1; e++)
                             {
-                                if (oneLayer[number].ColorNumber != oneLayer[number + 1].ColorNumber)
-                                    vertexBorder[e] = oneLayer[number];
-
-                                /*if (vertexBorder[e] != null)
+                                if (oneLayer[number] == vertexBorder[e])
                                 {
-                                    originalObj.Vertices[originalObj.Vertices.Count].ColorNumber = oneLayer[number].ColorNumber;
-                                }*/
-                            }
+                                    internalPoints.Add(CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], vertexBorder[e].ColorNumber, originalObj.Vertices.Count, 3));
+                                    internalSegments.Add(new StraightLine()
+                                    {
+                                        Point1 = oneLayer[number],
+                                        Point2 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                        Number1 = oneLayer[number].Number,
+                                        Number2 = originalObj.Vertices.Count - 1
+                                    });
+                                    internalPoints.Add(CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], colorsCount + 1, originalObj.Vertices.Count, 3));
+                                    if (number == 0)
+                                    {
+                                        temp1 = originalObj.Vertices.Count - 2;
+                                        temp2 = originalObj.Vertices.Count - 1;
+                                    }
+                                    number++;
+                                }
 
+                                if (number == 0)
+                                {
+                                    temp1 = originalObj.Vertices.Count - 2;
+                                    temp2 = originalObj.Vertices.Count - 1;
+                                }
+                                else if (number < oneLayer.Count - 1)
+                                {
+                                    internalPoints.Add(CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], oneLayer[number].ColorNumber, originalObj.Vertices.Count, 3));
+                                    internalSegments.Add(new StraightLine()
+                                    {
+                                        Point1 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                        Point2 = originalObj.Vertices[originalObj.Vertices.Count - 3],
+                                        Number1 = originalObj.Vertices.Count - 1,
+                                        Number2 = originalObj.Vertices.Count - 3
+                                    });
+                                    internalPoints.Add(CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], colorsCount + 1, originalObj.Vertices.Count, 3));
+                                    internalSegments.Add(new StraightLine()
+                                    {
+                                        Point1 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                        Point2 = originalObj.Vertices[originalObj.Vertices.Count - 3],
+                                        Number1 = originalObj.Vertices.Count - 1,
+                                        Number2 = originalObj.Vertices.Count - 3
+                                    });
+                                }
+                                if (number == oneLayer.Count - 1)
+                                {
+                                    internalPoints.Add(CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], oneLayer[number].ColorNumber, originalObj.Vertices.Count, 3));
+                                    internalSegments.Add(new StraightLine()
+                                    {
+                                        Point1 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                        Point2 = originalObj.Vertices[temp1],
+                                        Number1 = originalObj.Vertices.Count - 1,
+                                        Number2 = temp1
+                                    });
+                                    internalPoints.Add(CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], colorsCount + 1, originalObj.Vertices.Count, 3));
+                                    internalSegments.Add(new StraightLine()
+                                    {
+                                        Point1 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                        Point2 = originalObj.Vertices[temp2],
+                                        Number1 = originalObj.Vertices.Count - 1,
+                                        Number2 = temp2
+                                    });
+                                }
+
+
+
+                            }
+                            /*CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], colorsCount, originalObj.Vertices.Count, 3);
+                            CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], colorsCount, originalObj.Vertices.Count, 3);*/
                         }
                     }
                 }
@@ -173,34 +402,28 @@ namespace Project3D.L.Controller
                                         ((pointOfIntersection.Y - vertexOfSegm1.Coordinates.Y) / vertexOfSegm2.Coordinates.Y - vertexOfSegm1.Coordinates.Y)) ? true : false;
         }
 
-        private static void CreateInnerVertices(Obj originalObj, Coordinates vertex1, Vertex vertex2, int colorsCount, int verticesCount, int den)
+        private static Vertex CreateInnerVertices(Obj originalObj, Coordinates vertex1, Vertex vertex2, int colorsCount, int verticesCount, int den)
         {
+
             if (den == 1)
             {
-                originalObj.Vertices.Add(new Vertex(vertex1.X,
+                var internalPoint = new Vertex(vertex1.X,
                                                   vertex1.Y,
                                                   vertex2.Coordinates.Z,
-                                                  colorsCount + 1,
-                                                  verticesCount + 1));
-                originalObj.Vertices.Add(new Vertex(vertex1.X,
-                                     vertex1.Y,
-                                     vertex2.Coordinates.Z,
-                                     colorsCount + 1,
-                                     verticesCount + 1));
+                                                  colorsCount,
+                                                  verticesCount + 1);
+                originalObj.Vertices.Add(internalPoint);
+                return internalPoint;
             }
             else
             {
-
-                originalObj.Vertices.Add(new Vertex(vertex1.X + vertex2.Coordinates.X / den,
+                var internalPoint = new Vertex(vertex1.X + vertex2.Coordinates.X / den,
                                                       vertex1.Y + vertex2.Coordinates.Y / den,
                                                       vertex2.Coordinates.Z,
                                                       colorsCount + 1,
-                                                      verticesCount + 1));
-                originalObj.Vertices.Add(new Vertex(vertex1.X + vertex2.Coordinates.X / den,
-                                                      vertex1.Y + vertex2.Coordinates.Y / den,
-                                                      vertex2.Coordinates.Z,
-                                                      colorsCount + 1,
-                                                      verticesCount + 1));
+                                                      verticesCount + 1);
+                originalObj.Vertices.Add(internalPoint);
+                return internalPoint;
             }
         }
 
