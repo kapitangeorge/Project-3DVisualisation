@@ -44,7 +44,19 @@ namespace Project3D.L.Controller
                                     Point1 = internalPoints[i],
                                     Point2 = internalPointsNext[j]
                                 });
-                        }*/
+                        }
+                    for (var i = 0; i < incidLine.Count - 1; i++)
+                    {
+                        if (incidLine[i].Number1 == incidLine[i + 1].Number1)
+                            originalObj.Faces.Add(new Face( new int[] { incidLine[i].Number1, incidLine[i].Number2, incidLine[i + 1].Number2 }));
+                        else if (incidLine[i].Number1 == incidLine[i + 1].Number2)
+                            originalObj.Faces.Add(new Face(new int[] { incidLine[i].Number1, incidLine[i].Number2, incidLine[i + 1].Number1 }));
+                        else if (incidLine[i].Number2 == incidLine[i + 1].Number1)
+                            originalObj.Faces.Add(new Face(new int[] { incidLine[i].Number1, incidLine[i].Number2, incidLine[i + 1].Number2 }));
+                        else if (incidLine[i].Number2 == incidLine[i + 1].Number2)
+                            originalObj.Faces.Add(new Face(new int[] { incidLine[i].Number1, incidLine[i].Number2, incidLine[i + 1].Number1 }));
+                    }*/
+
                 }
             }
             return originalObj;
@@ -186,31 +198,39 @@ namespace Project3D.L.Controller
 
         public static void IncidenceMatrix(Obj originalObj, int[,] matrix, List<Vertex> oneLayer, List<Vertex> oneLayerNext)
         {
+            var FaceBetweenLayers = new List<Face>();
+            var z1 = oneLayer[0].Coordinates.Z;
+            var z2 = oneLayerNext[0].Coordinates.Z;
+            foreach (var face in originalObj.Faces)
+            {
+                var id1 = (int)face.Triangle[0];
+                var id2 = (int)face.Triangle[1];
+                var id3 = (int)face.Triangle[2];
+                if ((originalObj.Vertices[id1 - 1].Coordinates.Z == z1 && originalObj.Vertices[id2 - 1].Coordinates.Z == z1) ||
+                    (originalObj.Vertices[id2 - 1].Coordinates.Z == z1 && originalObj.Vertices[id3 - 1].Coordinates.Z == z1) ||
+                    (originalObj.Vertices[id1 - 1].Coordinates.Z == z1 && originalObj.Vertices[id3 - 1].Coordinates.Z == z1) ||
+                    (originalObj.Vertices[id1 - 1].Coordinates.Z == z2 && originalObj.Vertices[id2 - 1].Coordinates.Z == z2) ||
+                    (originalObj.Vertices[id2 - 1].Coordinates.Z == z2 && originalObj.Vertices[id3 - 1].Coordinates.Z == z2) ||
+                    (originalObj.Vertices[id1 - 1].Coordinates.Z == z2 && originalObj.Vertices[id3 - 1].Coordinates.Z == z2))
+                        FaceBetweenLayers.Add(face);
+            }
 
             for (var i = 0; i < oneLayer.Count; i++)
                 for (var j = 0; j < oneLayerNext.Count; j++)
                 {
-                    //Console.WriteLine(oneLayer[i]);
-                    //Console.WriteLine(oneLayerNext[j]);
-                    foreach (var face in originalObj.Faces)
+                    foreach (var face in FaceBetweenLayers)
                     {
-                        var countV = 0;
-                        foreach (var id in face.Triangle)
-                        {
-                            var e = (int)id;
-                            
-                            if ((int)id == oneLayer[i].Number || (int)id == oneLayerNext[j].Number)
-                            { 
-                            /* Console.WriteLine(id);
-                            Console.WriteLine(oneLayer[i]);
-                            Console.WriteLine("+");
-                            Console.WriteLine(oneLayerNext[j]);*/
-                            countV++;
-                            }
-                        }
-                        if (countV == 2)
+                        if ((face.Triangle[0] == oneLayer[i].Number && face.Triangle[1] == oneLayerNext[j].Number) ||
+                            (face.Triangle[0] == oneLayer[i].Number && face.Triangle[2] == oneLayerNext[j].Number) ||
+                            (face.Triangle[1] == oneLayer[i].Number && face.Triangle[0] == oneLayerNext[j].Number) ||
+                            (face.Triangle[1] == oneLayer[i].Number && face.Triangle[2] == oneLayerNext[j].Number) ||
+                            (face.Triangle[2] == oneLayer[i].Number && face.Triangle[0] == oneLayerNext[j].Number) ||
+                            (face.Triangle[2] == oneLayer[i].Number && face.Triangle[1] == oneLayerNext[j].Number))
                         {
                             matrix[i, j] = 1;
+
+                            Console.WriteLine($"вершина 1 слоя:{oneLayer[i].Number}   вершина 2 слоя:{oneLayerNext[j].Number}");
+
                         }
                     }
                 }
