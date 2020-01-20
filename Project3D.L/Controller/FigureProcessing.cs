@@ -11,6 +11,7 @@ namespace Project3D.L.Controller
         public static Obj ConnectionOfLayers(Obj originalObj)
         {
             var index = 1;
+            var colorsCount = originalObj.Colors.Count;
             var layers = originalObj.Vertices.OrderBy(x => x.Coordinates.Z).ToList();
             var countLayers = layers.Count;
             while (index < countLayers)
@@ -18,22 +19,24 @@ namespace Project3D.L.Controller
                 var oneLayer = GetOneLayer(layers, ref index);
                 var nextI = index++;
                 var oneLayerNext = GetOneLayer(layers, ref nextI);
+                //var br = 0;
                 if (oneLayer.Count >= 3 && oneLayerNext.Count >= 3)
                 {
                     var incidLine = new List<StraightLine>();
 
-                    var internalSegments = new List<StraightLine>();
+                    var internalBorders = new List<StraightLine>();
                     var internalPoints = new List<Vertex>();
-                    InternalFiling(originalObj, oneLayer, internalSegments, internalPoints);
+                    InternalFiling(originalObj, oneLayer, internalBorders, internalPoints);
 
-                    var internalSegmentsNext = new List<StraightLine>();
+                    var internalBordersNext = new List<StraightLine>();
                     var internalPointsNext = new List<Vertex>();
-                    InternalFiling(originalObj, oneLayerNext, internalSegmentsNext, internalPointsNext);
+                    InternalFiling(originalObj, oneLayerNext, internalBordersNext, internalPointsNext);
 
                     int[,] matrix = new int[oneLayer.Count, oneLayerNext.Count];
                     IncidenceMatrix(originalObj, matrix, oneLayer, oneLayerNext);
 
-                    /*for (var i = 0; i < internalPoints.Count; i++)
+                    //создание внутренних отрезков, если у внешних точек есть ребро(инцидентные вершины)
+                    for (var i = 0; i < internalPoints.Count; i++)
                         for (var j = 0; j < internalPointsNext.Count; j++)
                         {
                             if (matrix[i, j] == 1)
@@ -45,24 +48,150 @@ namespace Project3D.L.Controller
                                     Point2 = internalPointsNext[j]
                                 });
                         }
+
+                    Vertex defaultPoint;
+                    Vertex defaultPoint2;
+                    Vertex defaultPoint3;
+                    //создание внутренних полигонов
                     for (var i = 0; i < incidLine.Count - 1; i++)
                     {
                         if (incidLine[i].Number1 == incidLine[i + 1].Number1)
-                            originalObj.Faces.Add(new Face( new int[] { incidLine[i].Number1, incidLine[i].Number2, incidLine[i + 1].Number2 }));
-                        else if (incidLine[i].Number1 == incidLine[i + 1].Number2)
-                            originalObj.Faces.Add(new Face(new int[] { incidLine[i].Number1, incidLine[i].Number2, incidLine[i + 1].Number1 }));
-                        else if (incidLine[i].Number2 == incidLine[i + 1].Number1)
+                        {
                             originalObj.Faces.Add(new Face(new int[] { incidLine[i].Number1, incidLine[i].Number2, incidLine[i + 1].Number2 }));
-                        else if (incidLine[i].Number2 == incidLine[i + 1].Number2)
+                            defaultPoint = CreateDefault(originalObj, incidLine[i], colorsCount, 1);
+                            defaultPoint2 = CreateDefault(originalObj, incidLine[i], colorsCount, 2);
+                            defaultPoint3 = CreateDefault(originalObj, incidLine[i + 1], colorsCount, 2);
+                            originalObj.Faces.Add(new Face(new int[] { defaultPoint.Number, defaultPoint2.Number, defaultPoint3.Number }));
+                        }
+                        else if (incidLine[i].Number1 == incidLine[i + 1].Number2)
+                        {
                             originalObj.Faces.Add(new Face(new int[] { incidLine[i].Number1, incidLine[i].Number2, incidLine[i + 1].Number1 }));
-                    }*/
+                            defaultPoint = CreateDefault(originalObj, incidLine[i], colorsCount, 1);
+                            defaultPoint2 = CreateDefault(originalObj, incidLine[i], colorsCount, 2);
+                            defaultPoint3 = CreateDefault(originalObj, incidLine[i + 1], colorsCount, 1);
+                            originalObj.Faces.Add(new Face(new int[] { defaultPoint.Number, defaultPoint2.Number, defaultPoint3.Number }));
+                        }
+                        else if (incidLine[i].Number2 == incidLine[i + 1].Number1)
+                        {
+                            originalObj.Faces.Add(new Face(new int[] { incidLine[i].Number1, incidLine[i].Number2, incidLine[i + 1].Number2 }));
+                            defaultPoint = CreateDefault(originalObj, incidLine[i], colorsCount, 1);
+                            defaultPoint2 = CreateDefault(originalObj, incidLine[i], colorsCount, 2);
+                            defaultPoint3 = CreateDefault(originalObj, incidLine[i + 1], colorsCount, 2);
+                            originalObj.Faces.Add(new Face(new int[] { defaultPoint.Number, defaultPoint2.Number, defaultPoint3.Number }));
+                        }
+                        else if (incidLine[i].Number2 == incidLine[i + 1].Number2)
+                        {
+                            originalObj.Faces.Add(new Face(new int[] { incidLine[i].Number1, incidLine[i].Number2, incidLine[i + 1].Number1 }));
+                            defaultPoint = CreateDefault(originalObj, incidLine[i], colorsCount, 1);
+                            defaultPoint2 = CreateDefault(originalObj, incidLine[i], colorsCount, 2);
+                            defaultPoint3 = CreateDefault(originalObj, incidLine[i + 1], colorsCount, 1);
+                            originalObj.Faces.Add(new Face(new int[] { defaultPoint.Number, defaultPoint2.Number, defaultPoint3.Number }));
+                        }
+                    }
 
+
+                    //создание перегородок
+                    if (internalBorders.Count == internalBordersNext.Count)
+                        for (var border = 0; border < internalBorders.Count; border++)
+                        {
+                            var colorVert = internalBorders[border].Point1.ColorNumber;
+                            var colorVertNext = internalBordersNext[border].Point1.ColorNumber;
+                            if (colorVert == colorVertNext)
+                            {
+                                originalObj.Faces.Add(new Face(new int[] { internalBorders[border].Number1,
+                                                                           internalBordersNext[border].Number2,
+                                                                           internalBorders[border].Number2 }));
+                                originalObj.Faces.Add(new Face(new int[] { internalBordersNext[border].Number1,
+                                                                           internalBorders[border].Number1,
+                                                                           internalBordersNext[border].Number2}));
+                            }
+                        }
+                    else
+                    {
+                        if (internalBorders.Count != 0)
+                        {
+                            if (internalBorders[0].Point1.ColorNumber == internalBorders[3].Point1.ColorNumber)
+                            {
+                                originalObj.Faces.Add(new Face(new int[] { internalBorders[0].Number1,
+                                                                           internalBorders[0].Number2,
+                                                                           internalBorders[3].Number2 }));
+                                originalObj.Faces.Add(new Face(new int[] { internalBorders[3].Number1,
+                                                                           internalBorders[3].Number2,
+                                                                           internalBorders[0].Number1 }));
+                            }
+                            else if (internalBorders[1].Point1.ColorNumber == internalBorders[2].Point1.ColorNumber)
+                            {
+                                originalObj.Faces.Add(new Face(new int[] { internalBorders[1].Number1,
+                                                                           internalBorders[1].Number2,
+                                                                           internalBorders[2].Number2 }));
+                                originalObj.Faces.Add(new Face(new int[] { internalBorders[2].Number1,
+                                                                           internalBorders[2].Number2,
+                                                                           internalBorders[1].Number1 }));
+                            }
+                        }
+                        else
+                            if (internalBordersNext[0].Point1.ColorNumber == internalBordersNext[internalBordersNext.Count - 1].Point1.ColorNumber)
+                        {
+                            originalObj.Faces.Add(new Face(new int[] { internalBordersNext[0].Number1,
+                                                                           internalBordersNext[0].Number2,
+                                                                           internalBordersNext[3].Number2 }));
+                            originalObj.Faces.Add(new Face(new int[] { internalBordersNext[3].Number1,
+                                                                           internalBordersNext[3].Number2,
+                                                                           internalBordersNext[0].Number1 }));
+                        }
+                        else if (internalBordersNext[1].Point1.ColorNumber == internalBordersNext[2].Point1.ColorNumber)
+                        {
+                            originalObj.Faces.Add(new Face(new int[] { internalBordersNext[1].Number1,
+                                                                           internalBordersNext[1].Number2,
+                                                                           internalBordersNext[2].Number2 }));
+                            originalObj.Faces.Add(new Face(new int[] { internalBordersNext[2].Number1,
+                                                                           internalBordersNext[2].Number2,
+                                                                           internalBordersNext[1].Number1 }));
+                        }
+
+                    }
+
+                    //br++;
                 }
+                /*if (br == 1)
+                    break;*/
             }
             return originalObj;
         }
 
-        public static void InternalFiling(Obj originalObj, List<Vertex> oneLayer, List<StraightLine> internalSegments, List<Vertex> internalPoints)
+        private static Vertex CreateDefault(Obj originalObj, StraightLine segm, int colorsCount, int den)
+        {
+            Vertex defaultPoint;
+            if (den == 1)
+            {
+                defaultPoint = new Vertex(originalObj.Vertices[segm.Number1].Coordinates.X,
+                                                      originalObj.Vertices[segm.Number1].Coordinates.Y,
+                                                      originalObj.Vertices[segm.Number1].Coordinates.Z,
+                                                      colorsCount + 1,
+                                                      originalObj.Vertices.Count);
+                originalObj.Vertices.Add(defaultPoint);
+                originalObj.Normals.Add(new Normal(originalObj.Vertices[segm.Number1].Coordinates.X,
+                                                   originalObj.Vertices[segm.Number1].Coordinates.Y,
+                                                   originalObj.Vertices[segm.Number1].Coordinates.Z,
+                                                   defaultPoint.Number));
+            }
+            else
+            {
+                defaultPoint = new Vertex(originalObj.Vertices[segm.Number2].Coordinates.X,
+                                                      originalObj.Vertices[segm.Number2].Coordinates.Y,
+                                                      originalObj.Vertices[segm.Number2].Coordinates.Z,
+                                                      colorsCount + 1,
+                                                      originalObj.Vertices.Count);
+                originalObj.Vertices.Add(defaultPoint);
+                originalObj.Normals.Add(new Normal(originalObj.Vertices[segm.Number2].Coordinates.X,
+                                                   originalObj.Vertices[segm.Number2].Coordinates.Y,
+                                                   originalObj.Vertices[segm.Number2].Coordinates.Z,
+                                                   defaultPoint.Number));
+            }
+            return defaultPoint;
+        }
+
+        private static void InternalFiling(Obj originalObj, List<Vertex> oneLayer, List<StraightLine> internalBorders, List<Vertex> internalPoints)
         {
             var minAndMaxVertex = FindMinAndMax(oneLayer);
             var centerPoint = GetCenter(minAndMaxVertex);
@@ -81,6 +210,12 @@ namespace Project3D.L.Controller
                         vertexBorder[e] = oneLayer[i];
                         vertexBorder[e + 1] = oneLayer[i + 1];
                     }
+                else if (oneLayer[i].ColorNumber != oneLayer[oneLayer.Count - 1].ColorNumber)
+                    for (var e = 0; e < vertexBorder.Length - 1; e++)
+                    {
+                        vertexBorder[e] = oneLayer[oneLayer.Count - 1];
+                        vertexBorder[e + 1] = oneLayer[i];
+                    }
             }
 
             //если невыпуклая фигура
@@ -90,19 +225,20 @@ namespace Project3D.L.Controller
                 {
                     if (oneLayer[i] == problemPoints[0] || oneLayer[i] == problemPoints[1])
                     {
-                        for (var e = 0; e < vertexBorder.Length; e++)
+
+                        if (i == 0)
                         {
-                            if (i == 0)
-                            {
-                                var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[i + 1], ReflectNormal(normals[i]), ReflectNormal(normals[i + 1]));
-                                var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[oneLayer.Count - 1], ReflectNormal(normals[i]), ReflectNormal(normals[oneLayer.Count - 1]));
-                                var len1 = LengthOfSegment(oneLayer[i], oneLayer[i + 1], normals[i], normals[i + 1]);
-                                var len2 = LengthOfSegment(oneLayer[i], oneLayer[oneLayer.Count - 1], normals[i], normals[oneLayer.Count - 1]);
-                                var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
+                            var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[i + 1], ReflectNormal(normals[i]), ReflectNormal(normals[i + 1]));
+                            var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[oneLayer.Count - 1], ReflectNormal(normals[i]), ReflectNormal(normals[oneLayer.Count - 1]));
+                            var len1 = LengthOfSegment(oneLayer[i], oneLayer[i + 1], normals[i], normals[i + 1]);
+                            var len2 = LengthOfSegment(oneLayer[i], oneLayer[oneLayer.Count - 1], normals[i], normals[oneLayer.Count - 1]);
+                            var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
 
-                                internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], oneLayer[i].ColorNumber, originalObj.Vertices.Count, 1));
+                            internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], oneLayer[i].ColorNumber, originalObj.Vertices.Count, 1));
+                            for (var e = 0; e < vertexBorder.Length; e++)
+                            {
                                 if (oneLayer[i] == vertexBorder[e])
-                                    internalSegments.Add(new StraightLine()
+                                    internalBorders.Add(new StraightLine()
                                     {
                                         Point1 = vertexBorder[e],
                                         Point2 = originalObj.Vertices[originalObj.Vertices.Count - 1],
@@ -110,35 +246,21 @@ namespace Project3D.L.Controller
                                         Number2 = originalObj.Vertices.Count - 1
                                     });
                             }
-                            else if ((i >= 1) && (i < oneLayer.Count - 1))
-                            {
-                                var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[i + 1], ReflectNormal(normals[i]), ReflectNormal(normals[i + 1]));
-                                var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[i - 1], ReflectNormal(normals[i]), ReflectNormal(normals[i - 1]));
-                                var len1 = LengthOfSegment(oneLayer[i], oneLayer[i + 1], normals[i], normals[i + 1]);
-                                var len2 = LengthOfSegment(oneLayer[i], oneLayer[i - 1], normals[i], normals[i - 1]);
-                                var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
 
-                                internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], oneLayer[i].ColorNumber, originalObj.Vertices.Count, 1));
-                                if (oneLayer[i] == vertexBorder[e])
-                                    internalSegments.Add(new StraightLine()
-                                    {
-                                        Point1 = vertexBorder[e],
-                                        Point2 = originalObj.Vertices[originalObj.Vertices.Count - 1],
-                                        Number1 = vertexBorder[e].Number,
-                                        Number2 = originalObj.Vertices.Count - 1
-                                    });
-                            }
-                            else if (i == oneLayer.Count - 1)
-                            {
-                                var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[0], ReflectNormal(normals[i]), ReflectNormal(normals[0]));
-                                var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[oneLayer.Count - 2], ReflectNormal(normals[i]), ReflectNormal(normals[oneLayer.Count - 2]));
-                                var len1 = LengthOfSegment(oneLayer[i], oneLayer[0], normals[i], normals[0]);
-                                var len2 = LengthOfSegment(oneLayer[i], oneLayer[oneLayer.Count - 2], normals[i], normals[oneLayer.Count - 2]);
-                                var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
+                        }
+                        else if ((i >= 1) && (i < oneLayer.Count - 1))
+                        {
+                            var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[i + 1], ReflectNormal(normals[i]), ReflectNormal(normals[i + 1]));
+                            var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[i - 1], ReflectNormal(normals[i]), ReflectNormal(normals[i - 1]));
+                            var len1 = LengthOfSegment(oneLayer[i], oneLayer[i + 1], normals[i], normals[i + 1]);
+                            var len2 = LengthOfSegment(oneLayer[i], oneLayer[i - 1], normals[i], normals[i - 1]);
+                            var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
 
-                                internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], oneLayer[i].ColorNumber, originalObj.Vertices.Count, 1));
+                            internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], oneLayer[i].ColorNumber, originalObj.Vertices.Count, 1));
+                            for (var e = 0; e < vertexBorder.Length; e++)
+                            {
                                 if (oneLayer[i] == vertexBorder[e])
-                                    internalSegments.Add(new StraightLine()
+                                    internalBorders.Add(new StraightLine()
                                     {
                                         Point1 = vertexBorder[e],
                                         Point2 = originalObj.Vertices[originalObj.Vertices.Count - 1],
@@ -147,6 +269,28 @@ namespace Project3D.L.Controller
                                     });
                             }
                         }
+                        else if (i == oneLayer.Count - 1)
+                        {
+                            var cross1 = IntersectionOfLines(oneLayer[i], oneLayer[0], ReflectNormal(normals[i]), ReflectNormal(normals[0]));
+                            var cross2 = IntersectionOfLines(oneLayer[i], oneLayer[oneLayer.Count - 2], ReflectNormal(normals[i]), ReflectNormal(normals[oneLayer.Count - 2]));
+                            var len1 = LengthOfSegment(oneLayer[i], oneLayer[0], normals[i], normals[0]);
+                            var len2 = LengthOfSegment(oneLayer[i], oneLayer[oneLayer.Count - 2], normals[i], normals[oneLayer.Count - 2]);
+                            var nearestPoint = NearestIntersection(len1, len2, cross1, cross2, oneLayer[i]);
+
+                            internalPoints.Add(CreateInnerVertices(originalObj, nearestPoint, oneLayer[i], oneLayer[i].ColorNumber, originalObj.Vertices.Count, 1));
+                            for (var e = 0; e < vertexBorder.Length; e++)
+                            {
+                                if (oneLayer[i] == vertexBorder[e])
+                                    internalBorders.Add(new StraightLine()
+                                    {
+                                        Point1 = vertexBorder[e],
+                                        Point2 = originalObj.Vertices[originalObj.Vertices.Count - 1],
+                                        Number1 = vertexBorder[e].Number,
+                                        Number2 = originalObj.Vertices.Count - 1
+                                    });
+                            }
+                        }
+
                     }
                     else
                         for (var j = i; j < oneLayer.Count - 1; j++)
@@ -160,12 +304,12 @@ namespace Project3D.L.Controller
 
                             if (PointBelongToSegm(pointOfIntersection, oneLayer[j], oneLayer[j + 1]))
                             {
-                                internalPoints.Add(CreateInnerVertices(originalObj, pointOfIntersection, oneLayer[i], oneLayer[i].ColorNumber, originalObj.Vertices.Count, 5));
+                                internalPoints.Add(CreateInnerVertices(originalObj, pointOfIntersection, oneLayer[i], oneLayer[i].ColorNumber, originalObj.Vertices.Count, 450));
 
                                 for (var e = 0; e < vertexBorder.Length; e++)
                                 {
                                     if (oneLayer[i] == vertexBorder[e])
-                                        internalSegments.Add(new StraightLine()
+                                        internalBorders.Add(new StraightLine()
                                         {
                                             Point1 = vertexBorder[e],
                                             Point2 = originalObj.Vertices[originalObj.Vertices.Count - 1],
@@ -182,10 +326,10 @@ namespace Project3D.L.Controller
             {
                 for (var number = 0; number < oneLayer.Count; number++)
                 {
-                    internalPoints.Add(CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], oneLayer[number].ColorNumber, originalObj.Vertices.Count, 3));
+                    internalPoints.Add(CreateInnerVertices(originalObj, centerPoint.Coordinates, oneLayer[number], oneLayer[number].ColorNumber, originalObj.Vertices.Count, 300));
                     for (var e = 0; e < vertexBorder.Length; e++)
                         if (oneLayer[number] == vertexBorder[e])
-                            internalSegments.Add(new StraightLine()
+                            internalBorders.Add(new StraightLine()
                             {
                                 Point1 = vertexBorder[e],
                                 Point2 = originalObj.Vertices[originalObj.Vertices.Count - 1],
@@ -196,7 +340,7 @@ namespace Project3D.L.Controller
             }
         }
 
-        public static void IncidenceMatrix(Obj originalObj, int[,] matrix, List<Vertex> oneLayer, List<Vertex> oneLayerNext)
+        private static void IncidenceMatrix(Obj originalObj, int[,] matrix, List<Vertex> oneLayer, List<Vertex> oneLayerNext)
         {
             var FaceBetweenLayers = new List<Face>();
             var z1 = oneLayer[0].Coordinates.Z;
@@ -206,7 +350,8 @@ namespace Project3D.L.Controller
                 var id1 = (int)face.Triangle[0];
                 var id2 = (int)face.Triangle[1];
                 var id3 = (int)face.Triangle[2];
-                if ((originalObj.Vertices[id1 - 1].Coordinates.Z == z1 && originalObj.Vertices[id2 - 1].Coordinates.Z == z1) ||
+                if (id1 > 0 && id2 > 0 && id3 > 0)
+                    if ((originalObj.Vertices[id1 - 1].Coordinates.Z == z1 && originalObj.Vertices[id2 - 1].Coordinates.Z == z1) ||
                     (originalObj.Vertices[id2 - 1].Coordinates.Z == z1 && originalObj.Vertices[id3 - 1].Coordinates.Z == z1) ||
                     (originalObj.Vertices[id1 - 1].Coordinates.Z == z1 && originalObj.Vertices[id3 - 1].Coordinates.Z == z1) ||
                     (originalObj.Vertices[id1 - 1].Coordinates.Z == z2 && originalObj.Vertices[id2 - 1].Coordinates.Z == z2) ||
@@ -228,9 +373,8 @@ namespace Project3D.L.Controller
                             (face.Triangle[2] == oneLayer[i].Number && face.Triangle[1] == oneLayerNext[j].Number))
                         {
                             matrix[i, j] = 1;
-
                             Console.WriteLine($"вершина 1 слоя:{oneLayer[i].Number}   вершина 2 слоя:{oneLayerNext[j].Number}");
-
+                            break;
                         }
                     }
                 }
@@ -307,6 +451,7 @@ namespace Project3D.L.Controller
                                                   colorsCount,
                                                   verticesCount);
                 originalObj.Vertices.Add(internalPoint);
+                originalObj.Normals.Add(new Normal(vertex2.Coordinates.X * -1, vertex2.Coordinates.Y * -1, vertex2.Coordinates.Z, internalPoint.Number));
                 return internalPoint;
             }
             else
@@ -317,6 +462,7 @@ namespace Project3D.L.Controller
                                                       colorsCount,
                                                       verticesCount);
                 originalObj.Vertices.Add(internalPoint);
+                originalObj.Normals.Add(new Normal(vertex2.Coordinates.X * -1, vertex2.Coordinates.Y * -1, vertex2.Coordinates.Z, internalPoint.Number));
                 return internalPoint;
             }
         }
